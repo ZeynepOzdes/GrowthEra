@@ -8,12 +8,14 @@ from app.models.user import User
 from app.schemas.garden import (
     GardenCellResponse,
     GardenGridResponse,
+    GardenHabitTreeSyncResponse,
     GardenSyncResponse,
 )
 from app.services.garden_service import (
     GARDEN_COLUMNS,
     GARDEN_ROWS,
     sync_completed_tasks_to_garden,
+    sync_habit_trees_to_garden,
 )
 
 
@@ -67,6 +69,29 @@ def sync_completed_tasks(
         created_count=len(created_cells),
         skipped_count=skipped_count,
         cells=created_cells,
+    )
+
+
+@router.post("/sync-habit-trees", response_model=GardenHabitTreeSyncResponse)
+def sync_habit_trees(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    changed_cells, skipped_count, dormant_count = sync_habit_trees_to_garden(
+        user_id=current_user.id,
+        db=db,
+    )
+
+    db.commit()
+
+    for cell in changed_cells:
+        db.refresh(cell)
+
+    return GardenHabitTreeSyncResponse(
+        changed_count=len(changed_cells),
+        skipped_count=skipped_count,
+        dormant_count=dormant_count,
+        cells=changed_cells,
     )
 
 

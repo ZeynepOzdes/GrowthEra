@@ -38,3 +38,10 @@ class GardenSyncResponse(BaseModel):
     created_count: int
     skipped_count: int
     cells: list[GardenCellResponse]
+
+
+class GardenHabitTreeSyncResponse(BaseModel):
+    changed_count: int
+    skipped_count: int
+    dormant_count: int
+    cells: list[GardenCellResponse]

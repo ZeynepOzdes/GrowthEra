@@ -1,8 +1,8 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.dependencies.auth import get_current_active_user
@@ -18,6 +18,7 @@ from app.schemas.habit import (
     HabitStatus,
     HabitUpdate,
 )
+from app.services.garden_service import update_habit_tree_from_habit
 
 
 router = APIRouter(
@@ -106,6 +107,7 @@ def ensure_goal_belongs_to_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot attach a habit to an archived goal.",
         )
+
 
 def sync_goal_progress_from_habit_logs(
     goal_id: int | None,
@@ -266,6 +268,11 @@ def update_habit(
     for field, value in update_data.items():
         setattr(habit, field, value)
 
+    update_habit_tree_from_habit(
+        habit=habit,
+        db=db,
+    )
+
     db.commit()
     db.refresh(habit)
 
@@ -325,6 +332,11 @@ def log_habit(
             db=db,
         )
 
+        update_habit_tree_from_habit(
+            habit=habit,
+            db=db,
+        )
+
         db.commit()
         db.refresh(existing_log)
 
@@ -345,6 +357,11 @@ def log_habit(
     sync_goal_progress_from_habit_logs(
         goal_id=habit.goal_id,
         user_id=current_user.id,
+        db=db,
+    )
+
+    update_habit_tree_from_habit(
+        habit=habit,
         db=db,
     )
 
@@ -401,6 +418,11 @@ def pause_habit(
 
     habit.status = "paused"
 
+    update_habit_tree_from_habit(
+        habit=habit,
+        db=db,
+    )
+
     db.commit()
     db.refresh(habit)
 
@@ -421,6 +443,11 @@ def reactivate_habit(
 
     habit.status = "active"
 
+    update_habit_tree_from_habit(
+        habit=habit,
+        db=db,
+    )
+
     db.commit()
     db.refresh(habit)
 
@@ -440,6 +467,11 @@ def archive_habit(
     )
 
     habit.status = "archived"
+
+    update_habit_tree_from_habit(
+        habit=habit,
+        db=db,
+    )
 
     db.commit()
 
