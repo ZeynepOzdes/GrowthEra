@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  getGardenGrid,
-  syncCompletedTasksToGarden,
-} from "../api/garden";
+import { getGardenGrid, syncCompletedTasksToGarden } from "../api/garden";
 import type {
   GardenCellResponse,
   GardenGridResponse,
@@ -44,6 +41,14 @@ function formatDateTime(value: string): string {
   return new Date(value).toLocaleString();
 }
 
+function getGardenProgressPercentage(grid: GardenGridResponse): number {
+  if (grid.total_cells === 0) {
+    return 0;
+  }
+
+  return Math.round((grid.occupied_cells / grid.total_cells) * 100);
+}
+
 export function GardenPage() {
   const [gardenGrid, setGardenGrid] = useState<GardenGridResponse | null>(null);
   const [selectedCell, setSelectedCell] =
@@ -53,7 +58,7 @@ export function GardenPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isRepairing, setIsRepairing] = useState(false);
 
   const cellByPosition = useMemo(() => {
     const map = new Map<string, GardenCellResponse>();
@@ -79,29 +84,36 @@ export function GardenPage() {
     }
   }
 
-  async function handleSyncCompletedTasks() {
+  async function handleRepairGarden() {
     setError(null);
     setMessage(null);
-    setIsSyncing(true);
+
+    const confirmed = window.confirm(
+      "This will check completed tasks and add missing garden cells if any are missing. Continue?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsRepairing(true);
 
     try {
       const result = await syncCompletedTasksToGarden();
 
       if (result.created_count > 0) {
         setMessage(
-          `${result.created_count} completed task(s) added to your garden.`
+          `${result.created_count} missing completed task(s) were added to your garden.`
         );
       } else {
-        setMessage(
-          "No new completed tasks were added. Your garden is already up to date."
-        );
+        setMessage("Your garden is already up to date. No repair was needed.");
       }
 
       await loadGarden();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sync garden.");
+      setError(err instanceof Error ? err.message : "Could not repair garden.");
     } finally {
-      setIsSyncing(false);
+      setIsRepairing(false);
     }
   }
 
@@ -138,25 +150,37 @@ export function GardenPage() {
     (_, index) => index
   );
 
+  const progressPercentage = getGardenProgressPercentage(gardenGrid);
+
   return (
     <main className="page">
       <header className="page-header">
         <div>
           <h1>Garden</h1>
           <p>
-            Your completed tasks become visual cells in your personal growth
-            garden.
+            Your completed tasks automatically become visual cells in your
+            personal growth garden.
           </p>
         </div>
 
         <div className="page-header-actions">
           <button onClick={loadGarden}>Refresh</button>
 
-          <button onClick={handleSyncCompletedTasks} disabled={isSyncing}>
-            {isSyncing ? "Syncing..." : "Sync completed tasks"}
+          <button onClick={handleRepairGarden} disabled={isRepairing}>
+            {isRepairing ? "Repairing..." : "Repair missing cells"}
           </button>
         </div>
       </header>
+
+      <section className="garden-info-panel">
+        <div>
+          <strong>Automatic garden sync is active.</strong>
+          <p>
+            When you complete a task, GrowthEra now adds it to your garden
+            automatically. Use repair only if old completed tasks are missing.
+          </p>
+        </div>
+      </section>
 
       {error && <p className="error-message">{error}</p>}
       {message && <p className="success-message">{message}</p>}
@@ -179,13 +203,22 @@ export function GardenPage() {
 
         <article className="stat-card">
           <span>Garden progress</span>
-          <strong>
-            {Math.round(
-              (gardenGrid.occupied_cells / gardenGrid.total_cells) * 100
-            )}
-            %
-          </strong>
+          <strong>{progressPercentage}%</strong>
         </article>
+      </section>
+
+      <section className="panel garden-progress-panel">
+        <div className="garden-progress-header">
+          <span>Garden completion</span>
+          <strong>{progressPercentage}%</strong>
+        </div>
+
+        <div className="garden-progress-track">
+          <div
+            className="garden-progress-bar"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
       </section>
 
       <section className="content-grid garden-layout">
@@ -246,7 +279,7 @@ export function GardenPage() {
           {selectedCell ? (
             <div className="garden-cell-details">
               <span
-                className={`task-badge task-badge-${selectedCell.cell_type}`}
+                className={`garden-detail-badge garden-detail-badge-${selectedCell.cell_type}`}
               >
                 {selectedCell.cell_type}
               </span>
