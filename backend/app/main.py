@@ -8,6 +8,7 @@ from app.models import (
     ai_insight,
     daily_checkin,
     focus_session,
+    garden,
     goal,
     habit,
     life_area,
@@ -20,6 +21,7 @@ from app.routers import (
     daily_checkins,
     dashboard,
     focus_sessions,
+    garden,
     goals,
     habits,
     life_areas,
@@ -31,22 +33,11 @@ from app.routers import (
 Base.metadata.create_all(bind=engine)
 
 
-def seed_database() -> None:
-    db = SessionLocal()
-
-    try:
-        seed_default_life_areas(db)
-    finally:
-        db.close()
-
-
-seed_database()
-
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="GrowthEra - AI-powered personal growth and productivity tracking platform.",
 )
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,19 +51,20 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+def on_startup():
+    db = SessionLocal()
+
+    try:
+        seed_default_life_areas(db)
+    finally:
+        db.close()
+
+
 @app.get("/")
-def home():
+def read_root():
     return {
-        "message": "GrowthEra API is running.",
-        "version": settings.APP_VERSION,
-    }
-
-
-@app.get("/health")
-def health_check():
-    return {
-        "status": "healthy",
-        "app": settings.APP_NAME,
+        "message": "Welcome to GrowthEra API",
         "version": settings.APP_VERSION,
     }
 
@@ -87,3 +79,4 @@ app.include_router(dashboard.router)
 app.include_router(ai.router)
 app.include_router(tasks.router)
 app.include_router(focus_sessions.router)
+app.include_router(garden.router)
