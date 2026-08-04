@@ -32,3 +32,10 @@ export type GardenSyncResponse = {
   skipped_count: number;
   cells: GardenCellResponse[];
 };
+
+export type GardenHabitTreeSyncResponse = {
+  changed_count: number;
+  skipped_count: number;
+  dormant_count: number;
+  cells: GardenCellResponse[];
+};

@@ -1091,3 +1091,109 @@ select {
   background: #fee2e2;
   color: #b91c1c;
 }
+
+.garden-cell-seed {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #16a34a;
+}
+
+.garden-cell-sprout {
+  background: #bbf7d0;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.garden-cell-small-tree {
+  background: #86efac;
+  border-color: #4ade80;
+  color: #166534;
+}
+
+.garden-cell-tree {
+  background: #4ade80;
+  border-color: #22c55e;
+  color: #14532d;
+}
+
+.garden-cell-strong-tree {
+  background: #10b981;
+  border-color: #059669;
+  color: #ecfdf5;
+}
+
+.garden-cell-dormant-tree {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #6b7280;
+}
+
+.garden-legend-grouped {
+  align-items: flex-start;
+}
+
+.garden-legend-grouped > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.garden-legend-grouped strong {
+  color: #0f172a;
+  margin-right: 4px;
+}
+
+.legend-seed {
+  background: #dcfce7;
+}
+
+.legend-sprout {
+  background: #bbf7d0;
+}
+
+.legend-small-tree {
+  background: #86efac;
+}
+
+.legend-tree {
+  background: #4ade80;
+}
+
+.legend-strong-tree {
+  background: #10b981;
+}
+
+.legend-dormant-tree {
+  background: #f3f4f6;
+}
+
+.garden-detail-badge-seed {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.garden-detail-badge-sprout {
+  background: #bbf7d0;
+  color: #15803d;
+}
+
+.garden-detail-badge-small-tree {
+  background: #86efac;
+  color: #166534;
+}
+
+.garden-detail-badge-tree {
+  background: #4ade80;
+  color: #14532d;
+}
+
+.garden-detail-badge-strong-tree {
+  background: #10b981;
+  color: #ecfdf5;
+}
+
+.garden-detail-badge-dormant-tree {
+  background: #f3f4f6;
+  color: #6b7280;
+}

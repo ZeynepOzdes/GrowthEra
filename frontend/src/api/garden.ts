@@ -2,6 +2,7 @@ import { apiRequest } from "./client";
 import type {
   GardenCellResponse,
   GardenGridResponse,
+  GardenHabitTreeSyncResponse,
   GardenSyncResponse,
 } from "../types/garden";
 
@@ -11,6 +12,12 @@ export async function getGardenGrid(): Promise<GardenGridResponse> {
 
 export async function syncCompletedTasksToGarden(): Promise<GardenSyncResponse> {
   return apiRequest<GardenSyncResponse>("/garden/sync-completed-tasks", {
+    method: "POST",
+  });
+}
+
+export async function syncHabitTreesToGarden(): Promise<GardenHabitTreeSyncResponse> {
+  return apiRequest<GardenHabitTreeSyncResponse>("/garden/sync-habit-trees", {
     method: "POST",
   });
 }

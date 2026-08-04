@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { getGardenGrid, syncCompletedTasksToGarden } from "../api/garden";
+import {
+  getGardenGrid,
+  syncCompletedTasksToGarden,
+  syncHabitTreesToGarden,
+} from "../api/garden";
 import type {
   GardenCellResponse,
   GardenGridResponse,
@@ -26,7 +30,38 @@ function getCellSymbol(cellType: string): string {
     return "▲";
   }
 
+  if (cellType === "seed") {
+    return "•";
+  }
+
+  if (cellType === "sprout") {
+    return "♧";
+  }
+
+  if (cellType === "small-tree") {
+    return "♣";
+  }
+
+  if (cellType === "tree") {
+    return "♠";
+  }
+
+  if (cellType === "strong-tree") {
+    return "♛";
+  }
+
+  if (cellType === "dormant-tree") {
+    return "○";
+  }
+
   return "";
+}
+
+function getReadableCellType(cellType: string): string {
+  return cellType
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function getCellLabel(cell: GardenCellResponse | undefined): string {
@@ -34,7 +69,7 @@ function getCellLabel(cell: GardenCellResponse | undefined): string {
     return "Empty cell";
   }
 
-  return `${cell.cell_type}: ${cell.title}`;
+  return `${getReadableCellType(cell.cell_type)}: ${cell.title}`;
 }
 
 function formatDateTime(value: string): string {
@@ -49,6 +84,26 @@ function getGardenProgressPercentage(grid: GardenGridResponse): number {
   return Math.round((grid.occupied_cells / grid.total_cells) * 100);
 }
 
+function countCellsBySourceType(
+  cells: GardenCellResponse[],
+  sourceType: string
+): number {
+  return cells.filter((cell) => cell.source_type === sourceType).length;
+}
+
+function countTreeCells(cells: GardenCellResponse[]): number {
+  const treeTypes = [
+    "seed",
+    "sprout",
+    "small-tree",
+    "tree",
+    "strong-tree",
+    "dormant-tree",
+  ];
+
+  return cells.filter((cell) => treeTypes.includes(cell.cell_type)).length;
+}
+
 export function GardenPage() {
   const [gardenGrid, setGardenGrid] = useState<GardenGridResponse | null>(null);
   const [selectedCell, setSelectedCell] =
@@ -58,7 +113,8 @@ export function GardenPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isRepairing, setIsRepairing] = useState(false);
+  const [isRepairingTasks, setIsRepairingTasks] = useState(false);
+  const [isRepairingTrees, setIsRepairingTrees] = useState(false);
 
   const cellByPosition = useMemo(() => {
     const map = new Map<string, GardenCellResponse>();
@@ -84,7 +140,7 @@ export function GardenPage() {
     }
   }
 
-  async function handleRepairGarden() {
+  async function handleRepairTaskCells() {
     setError(null);
     setMessage(null);
 
@@ -96,29 +152,72 @@ export function GardenPage() {
       return;
     }
 
-    setIsRepairing(true);
+    setIsRepairingTasks(true);
 
     try {
       const result = await syncCompletedTasksToGarden();
 
       if (result.created_count > 0) {
         setMessage(
-          `${result.created_count} missing completed task(s) were added to your garden.`
+          `${result.created_count} missing completed task cell(s) were added to your garden.`
         );
       } else {
-        setMessage("Your garden is already up to date. No repair was needed.");
+        setMessage("Task cells are already up to date. No repair was needed.");
       }
 
       await loadGarden();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not repair garden.");
+      setError(
+        err instanceof Error ? err.message : "Could not repair task cells."
+      );
     } finally {
-      setIsRepairing(false);
+      setIsRepairingTasks(false);
+    }
+  }
+
+  async function handleRepairHabitTrees() {
+    setError(null);
+    setMessage(null);
+
+    const confirmed = window.confirm(
+      "This will recalculate habit streak trees and update missing or outdated tree cells. Continue?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsRepairingTrees(true);
+
+    try {
+      const result = await syncHabitTreesToGarden();
+
+      if (result.changed_count > 0) {
+        setMessage(
+          `${result.changed_count} habit tree cell(s) were updated. Dormant trees: ${result.dormant_count}.`
+        );
+      } else {
+        setMessage("Habit trees are already up to date.");
+      }
+
+      await loadGarden();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not repair habit trees."
+      );
+    } finally {
+      setIsRepairingTrees(false);
     }
   }
 
   useEffect(() => {
     loadGarden();
+
+    window.addEventListener("growthera:task-updated", loadGarden);
+
+    return () => {
+      window.removeEventListener("growthera:task-updated", loadGarden);
+    };
   }, []);
 
   if (isLoading) {
@@ -151,6 +250,8 @@ export function GardenPage() {
   );
 
   const progressPercentage = getGardenProgressPercentage(gardenGrid);
+  const taskCellCount = countCellsBySourceType(gardenGrid.cells, "task");
+  const habitTreeCount = countTreeCells(gardenGrid.cells);
 
   return (
     <main className="page">
@@ -158,16 +259,20 @@ export function GardenPage() {
         <div>
           <h1>Garden</h1>
           <p>
-            Your completed tasks automatically become visual cells in your
-            personal growth garden.
+            Your completed tasks and habit streaks become visual growth in your
+            personal garden.
           </p>
         </div>
 
         <div className="page-header-actions">
           <button onClick={loadGarden}>Refresh</button>
 
-          <button onClick={handleRepairGarden} disabled={isRepairing}>
-            {isRepairing ? "Repairing..." : "Repair missing cells"}
+          <button onClick={handleRepairTaskCells} disabled={isRepairingTasks}>
+            {isRepairingTasks ? "Repairing..." : "Repair task cells"}
+          </button>
+
+          <button onClick={handleRepairHabitTrees} disabled={isRepairingTrees}>
+            {isRepairingTrees ? "Updating..." : "Repair habit trees"}
           </button>
         </div>
       </header>
@@ -176,8 +281,8 @@ export function GardenPage() {
         <div>
           <strong>Automatic garden sync is active.</strong>
           <p>
-            When you complete a task, GrowthEra now adds it to your garden
-            automatically. Use repair only if old completed tasks are missing.
+            Completed tasks create garden cells automatically. Completed habit
+            logs grow habit trees from seed to strong tree as your streak grows.
           </p>
         </div>
       </section>
@@ -192,13 +297,13 @@ export function GardenPage() {
         </article>
 
         <article className="stat-card">
-          <span>Occupied</span>
-          <strong>{gardenGrid.occupied_cells}</strong>
+          <span>Task cells</span>
+          <strong>{taskCellCount}</strong>
         </article>
 
         <article className="stat-card">
-          <span>Empty</span>
-          <strong>{gardenGrid.empty_cells}</strong>
+          <span>Habit trees</span>
+          <strong>{habitTreeCount}</strong>
         </article>
 
         <article className="stat-card">
@@ -210,7 +315,10 @@ export function GardenPage() {
       <section className="panel garden-progress-panel">
         <div className="garden-progress-header">
           <span>Garden completion</span>
-          <strong>{progressPercentage}%</strong>
+          <strong>
+            {gardenGrid.occupied_cells}/{gardenGrid.total_cells} cells •{" "}
+            {progressPercentage}%
+          </strong>
         </div>
 
         <div className="garden-progress-track">
@@ -254,22 +362,47 @@ export function GardenPage() {
             )}
           </div>
 
-          <div className="garden-legend">
-            <span>
-              <i className="legend-box legend-flower" /> Flower
-            </span>
-            <span>
-              <i className="legend-box legend-rock" /> Rock
-            </span>
-            <span>
-              <i className="legend-box legend-water" /> Water
-            </span>
-            <span>
-              <i className="legend-box legend-air" /> Air
-            </span>
-            <span>
-              <i className="legend-box legend-fire" /> Fire
-            </span>
+          <div className="garden-legend garden-legend-grouped">
+            <div>
+              <strong>Task cells</strong>
+              <span>
+                <i className="legend-box legend-flower" /> Flower
+              </span>
+              <span>
+                <i className="legend-box legend-rock" /> Rock
+              </span>
+              <span>
+                <i className="legend-box legend-water" /> Water
+              </span>
+              <span>
+                <i className="legend-box legend-air" /> Air
+              </span>
+              <span>
+                <i className="legend-box legend-fire" /> Fire
+              </span>
+            </div>
+
+            <div>
+              <strong>Habit trees</strong>
+              <span>
+                <i className="legend-box legend-seed" /> Seed
+              </span>
+              <span>
+                <i className="legend-box legend-sprout" /> Sprout
+              </span>
+              <span>
+                <i className="legend-box legend-small-tree" /> Small tree
+              </span>
+              <span>
+                <i className="legend-box legend-tree" /> Tree
+              </span>
+              <span>
+                <i className="legend-box legend-strong-tree" /> Strong tree
+              </span>
+              <span>
+                <i className="legend-box legend-dormant-tree" /> Dormant
+              </span>
+            </div>
           </div>
         </article>
 
@@ -281,7 +414,7 @@ export function GardenPage() {
               <span
                 className={`garden-detail-badge garden-detail-badge-${selectedCell.cell_type}`}
               >
-                {selectedCell.cell_type}
+                {getReadableCellType(selectedCell.cell_type)}
               </span>
 
               <h3>{selectedCell.title}</h3>
@@ -294,6 +427,19 @@ export function GardenPage() {
                 <span>Source ID: {selectedCell.source_id ?? "N/A"}</span>
                 <span>Created: {formatDateTime(selectedCell.created_at)}</span>
               </div>
+
+              {selectedCell.source_type === "habit" && (
+                <p className="note">
+                  Habit trees grow as your daily completion streak increases.
+                </p>
+              )}
+
+              {selectedCell.source_type === "task" && (
+                <p className="note">
+                  Task cells represent completed tasks and stay as historical
+                  progress.
+                </p>
+              )}
             </div>
           ) : (
             <p>Select a filled garden cell to see details.</p>
