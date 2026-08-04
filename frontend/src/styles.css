@@ -855,3 +855,156 @@ select {
   font-size: 12px;
   text-transform: capitalize;
 }
+
+.page-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.garden-layout {
+  grid-template-columns: 1.4fr 0.8fr;
+}
+
+.garden-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(42px, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.garden-cell {
+  aspect-ratio: 1;
+  border: 1px solid #dbe3f0;
+  border-radius: 14px;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.garden-cell:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  border-color: #94a3b8;
+}
+
+.garden-cell span {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.garden-cell-empty {
+  background: #ffffff;
+}
+
+.garden-cell-flower {
+  background: #fce7f3;
+  border-color: #f9a8d4;
+  color: #be185d;
+}
+
+.garden-cell-rock {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.garden-cell-water {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
+}
+
+.garden-cell-air {
+  background: #fef9c3;
+  border-color: #fde68a;
+  color: #a16207;
+}
+
+.garden-cell-fire {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.garden-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.garden-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 5px;
+  display: inline-block;
+  border: 1px solid #cbd5e1;
+}
+
+.legend-flower {
+  background: #fce7f3;
+}
+
+.legend-rock {
+  background: #f1f5f9;
+}
+
+.legend-water {
+  background: #e0f2fe;
+}
+
+.legend-air {
+  background: #fef9c3;
+}
+
+.legend-fire {
+  background: #fee2e2;
+}
+
+.garden-cell-details {
+  display: grid;
+  gap: 12px;
+}
+
+.garden-cell-details h3 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.garden-cell-details p {
+  margin: 0;
+  color: #64748b;
+}
+
+@media (max-width: 900px) {
+  .garden-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .garden-grid {
+    grid-template-columns: repeat(8, minmax(28px, 1fr));
+    gap: 6px;
+  }
+
+  .garden-cell {
+    border-radius: 10px;
+  }
+
+  .garden-cell span {
+    font-size: 16px;
+  }
+}

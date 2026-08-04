@@ -1,26 +1,29 @@
 import { Navigate, Route, Routes } from "react-router";
-import { getToken } from "./api/auth";
 import { AppLayout } from "./components/AppLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AIInsightsPage } from "./pages/AIInsightsPage";
 import { DailyCheckInPage } from "./pages/DailyCheckInPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { GardenPage } from "./pages/GardenPage";
 import { GoalsPage } from "./pages/GoalsPage";
 import { HabitsPage } from "./pages/HabitsPage";
-import { TasksPage } from "./pages/TasksPage";
 import { LifeAreasPage } from "./pages/LifeAreasPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
-import { AIInsightsPage } from "./pages/AIInsightsPage";
+import { TasksPage } from "./pages/TasksPage";
 
-function App() {
-  const token = getToken();
+function ProtectedPage({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <AppLayout>{children}</AppLayout>
+    </ProtectedRoute>
+  );
+}
 
+export default function App() {
   return (
     <Routes>
-      <Route
-        path="/"
-        element={<Navigate to={token ? "/dashboard" : "/login"} replace />}
-      />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
@@ -28,83 +31,76 @@ function App() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
-            <AppLayout>
-              <DashboardPage />
-            </AppLayout>
-          </ProtectedRoute>
+          <ProtectedPage>
+            <DashboardPage />
+          </ProtectedPage>
         }
       />
 
       <Route
         path="/life-areas"
         element={
-          <ProtectedRoute>
-            <AppLayout>
-              <LifeAreasPage />
-            </AppLayout>
-          </ProtectedRoute>
+          <ProtectedPage>
+            <LifeAreasPage />
+          </ProtectedPage>
         }
       />
 
       <Route
         path="/goals"
         element={
-          <ProtectedRoute>
-            <AppLayout>
-              <GoalsPage />
-            </AppLayout>
-          </ProtectedRoute>
+          <ProtectedPage>
+            <GoalsPage />
+          </ProtectedPage>
         }
       />
 
       <Route
         path="/habits"
         element={
-          <ProtectedRoute>
-            <AppLayout>
-              <HabitsPage />
-            </AppLayout>
-          </ProtectedRoute>
+          <ProtectedPage>
+            <HabitsPage />
+          </ProtectedPage>
         }
       />
 
       <Route
         path="/tasks"
         element={
-          <ProtectedRoute>
-            <AppLayout>
-              <TasksPage />
-            </AppLayout>
-          </ProtectedRoute>
+          <ProtectedPage>
+            <TasksPage />
+          </ProtectedPage>
+        }
+      />
+
+      <Route
+        path="/garden"
+        element={
+          <ProtectedPage>
+            <GardenPage />
+          </ProtectedPage>
         }
       />
 
       <Route
         path="/daily-checkin"
         element={
-          <ProtectedRoute>
-            <AppLayout>
-              <DailyCheckInPage />
-            </AppLayout>
-          </ProtectedRoute>
+          <ProtectedPage>
+            <DailyCheckInPage />
+          </ProtectedPage>
         }
       />
 
       <Route
         path="/ai-insights"
         element={
-          <ProtectedRoute>
-            <AppLayout>
-              <AIInsightsPage />
-            </AppLayout>
-          </ProtectedRoute>
+          <ProtectedPage>
+            <AIInsightsPage />
+          </ProtectedPage>
         }
       />
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }
-
-export default App;
