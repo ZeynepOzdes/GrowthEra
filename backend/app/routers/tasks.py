@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.dependencies.auth import get_current_active_user
+from app.services.garden_service import create_garden_cell_from_task
 from app.models.goal import Goal
 from app.models.life_area import LifeArea, UserArea
 from app.models.task import Task
@@ -393,16 +394,22 @@ def complete_task(
         db=db,
     )
 
+    if task.status == "archived":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Archived tasks cannot be completed.",
+        )
+
+    if task.status == "completed":
+        return task
+
+    now = datetime.utcnow()
+
     task.status = "completed"
-    task.completed_at = datetime.utcnow()
+    task.completed_at = now
+    task.updated_at = now
 
-    db.flush()
-
-    sync_goal_progress_from_tasks(
-        goal_id=task.goal_id,
-        user_id=current_user.id,
-        db=db,
-    )
+    create_garden_cell_from_task(task=task, db=db)
 
     db.commit()
     db.refresh(task)
