@@ -9,6 +9,25 @@ import type {
   GardenGridResponse,
 } from "../types/garden";
 
+const HABIT_TREE_TYPES = [
+  "seed",
+  "sprout",
+  "small-tree",
+  "tree",
+  "strong-tree",
+  "dormant-tree",
+];
+
+type HabitTreeProgressInfo = {
+  currentStage: string;
+  currentStreak: number | null;
+  nextStage: string | null;
+  nextStageAt: number | null;
+  progressLabel: string;
+  progressPercentage: number;
+  explanation: string;
+};
+
 function getCellSymbol(cellType: string): string {
   if (cellType === "flower") {
     return "✿";
@@ -92,16 +111,122 @@ function countCellsBySourceType(
 }
 
 function countTreeCells(cells: GardenCellResponse[]): number {
-  const treeTypes = [
-    "seed",
-    "sprout",
-    "small-tree",
-    "tree",
-    "strong-tree",
-    "dormant-tree",
-  ];
+  return cells.filter((cell) => HABIT_TREE_TYPES.includes(cell.cell_type))
+    .length;
+}
 
-  return cells.filter((cell) => treeTypes.includes(cell.cell_type)).length;
+function parseHabitStreak(description: string | null): number | null {
+  if (!description) {
+    return null;
+  }
+
+  if (description.toLowerCase().includes("inactive")) {
+    return 0;
+  }
+
+  const match = description.match(/Habit streak:\s*(\d+)\s*day/i);
+
+  if (!match) {
+    return null;
+  }
+
+  return Number(match[1]);
+}
+
+function getHabitTreeProgressInfo(
+  cell: GardenCellResponse
+): HabitTreeProgressInfo {
+  const streak = parseHabitStreak(cell.description);
+  const currentStage = getReadableCellType(cell.cell_type);
+
+  if (streak === null) {
+    return {
+      currentStage,
+      currentStreak: null,
+      nextStage: null,
+      nextStageAt: null,
+      progressLabel: "Streak data is not available.",
+      progressPercentage: 0,
+      explanation:
+        "This tree is linked to a habit, but GrowthEra could not read its current streak yet.",
+    };
+  }
+
+  if (streak <= 0) {
+    return {
+      currentStage,
+      currentStreak: 0,
+      nextStage: "Seed",
+      nextStageAt: 1,
+      progressLabel: "0/1 day",
+      progressPercentage: 0,
+      explanation:
+        "This habit tree is dormant because there is no completed log for today or yesterday.",
+    };
+  }
+
+  if (streak <= 2) {
+    return {
+      currentStage,
+      currentStreak: streak,
+      nextStage: "Sprout",
+      nextStageAt: 3,
+      progressLabel: `${streak}/3 days`,
+      progressPercentage: Math.min(100, Math.round((streak / 3) * 100)),
+      explanation:
+        "Keep completing this habit daily to turn this seed into a sprout.",
+    };
+  }
+
+  if (streak <= 6) {
+    return {
+      currentStage,
+      currentStreak: streak,
+      nextStage: "Small Tree",
+      nextStageAt: 7,
+      progressLabel: `${streak}/7 days`,
+      progressPercentage: Math.min(100, Math.round((streak / 7) * 100)),
+      explanation:
+        "Your habit is growing. Reach 7 days to turn it into a small tree.",
+    };
+  }
+
+  if (streak <= 13) {
+    return {
+      currentStage,
+      currentStreak: streak,
+      nextStage: "Tree",
+      nextStageAt: 14,
+      progressLabel: `${streak}/14 days`,
+      progressPercentage: Math.min(100, Math.round((streak / 14) * 100)),
+      explanation:
+        "This habit is becoming stable. Reach 14 days to grow a full tree.",
+    };
+  }
+
+  if (streak <= 29) {
+    return {
+      currentStage,
+      currentStreak: streak,
+      nextStage: "Strong Tree",
+      nextStageAt: 30,
+      progressLabel: `${streak}/30 days`,
+      progressPercentage: Math.min(100, Math.round((streak / 30) * 100)),
+      explanation:
+        "This habit is strong. Reach 30 days to turn it into a strong tree.",
+    };
+  }
+
+  return {
+    currentStage,
+    currentStreak: streak,
+    nextStage: null,
+    nextStageAt: null,
+    progressLabel: `${streak} days • Max stage reached`,
+    progressPercentage: 100,
+    explanation:
+      "This habit reached the strongest tree stage. Keep the streak alive.",
+  };
 }
 
 export function GardenPage() {
@@ -252,6 +377,11 @@ export function GardenPage() {
   const progressPercentage = getGardenProgressPercentage(gardenGrid);
   const taskCellCount = countCellsBySourceType(gardenGrid.cells, "task");
   const habitTreeCount = countTreeCells(gardenGrid.cells);
+
+  const selectedHabitTreeInfo =
+    selectedCell?.source_type === "habit"
+      ? getHabitTreeProgressInfo(selectedCell)
+      : null;
 
   return (
     <main className="page">
@@ -420,6 +550,51 @@ export function GardenPage() {
               <h3>{selectedCell.title}</h3>
 
               {selectedCell.description && <p>{selectedCell.description}</p>}
+
+              {selectedHabitTreeInfo && (
+                <section className="habit-tree-progress-card">
+                  <div className="habit-tree-progress-grid">
+                    <div>
+                      <span>Current stage</span>
+                      <strong>{selectedHabitTreeInfo.currentStage}</strong>
+                    </div>
+
+                    <div>
+                      <span>Current streak</span>
+                      <strong>
+                        {selectedHabitTreeInfo.currentStreak === null
+                          ? "Unknown"
+                          : `${selectedHabitTreeInfo.currentStreak} day(s)`}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Next stage</span>
+                      <strong>
+                        {selectedHabitTreeInfo.nextStage
+                          ? `${selectedHabitTreeInfo.nextStage} at ${selectedHabitTreeInfo.nextStageAt} day(s)`
+                          : "Max stage"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Progress</span>
+                      <strong>{selectedHabitTreeInfo.progressLabel}</strong>
+                    </div>
+                  </div>
+
+                  <div className="habit-tree-progress-track">
+                    <div
+                      className="habit-tree-progress-bar"
+                      style={{
+                        width: `${selectedHabitTreeInfo.progressPercentage}%`,
+                      }}
+                    />
+                  </div>
+
+                  <p>{selectedHabitTreeInfo.explanation}</p>
+                </section>
+              )}
 
               <div className="task-meta">
                 <span>Color: {selectedCell.color_name}</span>
