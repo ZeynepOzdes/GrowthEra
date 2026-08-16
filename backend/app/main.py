@@ -9,6 +9,7 @@ from app.models import (
     daily_checkin,
     focus_session,
     garden,
+    garden_v2,
     goal,
     habit,
     life_area,
@@ -22,6 +23,7 @@ from app.routers import (
     dashboard,
     focus_sessions,
     garden,
+    garden_v2,
     goals,
     habits,
     life_areas,
@@ -80,3 +82,4 @@ app.include_router(ai.router)
 app.include_router(tasks.router)
 app.include_router(focus_sessions.router)
 app.include_router(garden.router)
+app.include_router(garden_v2.router)
