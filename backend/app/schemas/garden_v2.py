@@ -74,3 +74,9 @@ class GardenCurrentPlotResponse(BaseModel):
     context: GardenJourneyContextResponse
     plot: GardenPlotResponse
     objects: list[GardenObjectResponse]
+
+
+class GardenV2TaskSyncResponse(BaseModel):
+    created_count: int
+    skipped_count: int
+    objects: list[GardenObjectResponse]

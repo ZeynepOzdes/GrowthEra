@@ -9,6 +9,7 @@ from app.schemas.garden_v2 import (
     GardenCurrentPlotResponse,
     GardenJourneyContextResponse,
     GardenPlotDetailResponse,
+    GardenV2TaskSyncResponse,
     GardenWorldResponse,
 )
 from app.services.garden_v2_service import (
@@ -18,6 +19,7 @@ from app.services.garden_v2_service import (
     calculate_plot_index,
     ensure_plots_up_to_current,
     get_plot_objects,
+    sync_completed_tasks_to_garden_v2,
 )
 
 
@@ -132,4 +134,26 @@ def get_garden_plot_detail(
     return GardenPlotDetailResponse(
         plot=plot,
         objects=objects,
+    )
+
+
+@router.post("/sync-completed-tasks", response_model=GardenV2TaskSyncResponse)
+def sync_completed_tasks_to_v2_garden(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    created_objects, skipped_count = sync_completed_tasks_to_garden_v2(
+        user=current_user,
+        db=db,
+    )
+
+    db.commit()
+
+    for garden_object in created_objects:
+        db.refresh(garden_object)
+
+    return GardenV2TaskSyncResponse(
+        created_count=len(created_objects),
+        skipped_count=skipped_count,
+        objects=created_objects,
     )

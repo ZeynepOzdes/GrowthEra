@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.dependencies.auth import get_current_active_user
 from app.services.garden_service import create_garden_cell_from_task
+from app.services.garden_v2_service import create_garden_v2_object_from_task
 from app.models.goal import Goal
 from app.models.life_area import LifeArea, UserArea
 from app.models.task import Task
@@ -410,6 +411,7 @@ def complete_task(
     task.updated_at = now
 
     create_garden_cell_from_task(task=task, db=db)
+    create_garden_v2_object_from_task(task=task, user=current_user, db=db)
 
     db.commit()
     db.refresh(task)
