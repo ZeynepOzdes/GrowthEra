@@ -60,6 +60,46 @@ class GardenObjectResponse(BaseModel):
     updated_at: datetime
 
 
+class HabitTreeStateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    habit_id: int
+
+    growth_points: int
+    current_streak: int
+    best_streak: int
+
+    last_completed_date: date | None
+    is_dormant: bool
+
+    active_cycle_number: int
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class HabitTreeCycleResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    habit_id: int
+    garden_plot_id: int
+    garden_object_id: int | None
+
+    cycle_number: int
+    cycle_start_growth_point: int
+    cycle_end_growth_point: int
+    growth_points_in_cycle: int
+
+    status: str
+
+    created_at: datetime
+    updated_at: datetime
+
+
 class GardenPlotDetailResponse(BaseModel):
     plot: GardenPlotResponse
     objects: list[GardenObjectResponse]
@@ -79,4 +119,11 @@ class GardenCurrentPlotResponse(BaseModel):
 class GardenV2TaskSyncResponse(BaseModel):
     created_count: int
     skipped_count: int
+    objects: list[GardenObjectResponse]
+
+
+class GardenV2HabitTreeSyncResponse(BaseModel):
+    changed_count: int
+    skipped_count: int
+    dormant_count: int
     objects: list[GardenObjectResponse]

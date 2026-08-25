@@ -9,6 +9,7 @@ from app.schemas.garden_v2 import (
     GardenCurrentPlotResponse,
     GardenJourneyContextResponse,
     GardenPlotDetailResponse,
+    GardenV2HabitTreeSyncResponse,
     GardenV2TaskSyncResponse,
     GardenWorldResponse,
 )
@@ -18,8 +19,10 @@ from app.services.garden_v2_service import (
     calculate_plot_day,
     calculate_plot_index,
     ensure_plots_up_to_current,
+    get_current_plot_objects_with_idle_rocks,
     get_plot_objects,
     sync_completed_tasks_to_garden_v2,
+    sync_habit_trees_to_garden_v2,
 )
 
 
@@ -86,9 +89,9 @@ def get_current_garden_plot(
     db.commit()
     db.refresh(current_plot)
 
-    objects = get_plot_objects(
-        user_id=current_user.id,
-        garden_plot_id=current_plot.id,
+    objects = get_current_plot_objects_with_idle_rocks(
+        user=current_user,
+        garden_plot=current_plot,
         db=db,
     )
 
@@ -156,4 +159,27 @@ def sync_completed_tasks_to_v2_garden(
         created_count=len(created_objects),
         skipped_count=skipped_count,
         objects=created_objects,
+    )
+
+
+@router.post("/sync-habit-trees", response_model=GardenV2HabitTreeSyncResponse)
+def sync_habit_trees_to_v2_garden(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    changed_objects, skipped_count, dormant_count = sync_habit_trees_to_garden_v2(
+        user=current_user,
+        db=db,
+    )
+
+    db.commit()
+
+    for garden_object in changed_objects:
+        db.refresh(garden_object)
+
+    return GardenV2HabitTreeSyncResponse(
+        changed_count=len(changed_objects),
+        skipped_count=skipped_count,
+        dormant_count=dormant_count,
+        objects=changed_objects,
     )

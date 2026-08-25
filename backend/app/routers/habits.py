@@ -19,6 +19,7 @@ from app.schemas.habit import (
     HabitUpdate,
 )
 from app.services.garden_service import update_habit_tree_from_habit
+from app.services.garden_v2_service import update_habit_tree_state_from_habit
 
 
 router = APIRouter(
@@ -155,6 +156,23 @@ def sync_goal_progress_from_habit_logs(
             goal.status = "active"
 
 
+def sync_habit_garden_layers(
+    habit: Habit,
+    user: User,
+    db: Session,
+) -> None:
+    update_habit_tree_from_habit(
+        habit=habit,
+        db=db,
+    )
+
+    update_habit_tree_state_from_habit(
+        habit=habit,
+        user=user,
+        db=db,
+    )
+
+
 @router.post("/", response_model=HabitResponse, status_code=status.HTTP_201_CREATED)
 def create_habit(
     habit_data: HabitCreate,
@@ -268,8 +286,9 @@ def update_habit(
     for field, value in update_data.items():
         setattr(habit, field, value)
 
-    update_habit_tree_from_habit(
+    sync_habit_garden_layers(
         habit=habit,
+        user=current_user,
         db=db,
     )
 
@@ -332,8 +351,9 @@ def log_habit(
             db=db,
         )
 
-        update_habit_tree_from_habit(
+        sync_habit_garden_layers(
             habit=habit,
+            user=current_user,
             db=db,
         )
 
@@ -360,8 +380,9 @@ def log_habit(
         db=db,
     )
 
-    update_habit_tree_from_habit(
+    sync_habit_garden_layers(
         habit=habit,
+        user=current_user,
         db=db,
     )
 
@@ -418,8 +439,9 @@ def pause_habit(
 
     habit.status = "paused"
 
-    update_habit_tree_from_habit(
+    sync_habit_garden_layers(
         habit=habit,
+        user=current_user,
         db=db,
     )
 
@@ -443,8 +465,9 @@ def reactivate_habit(
 
     habit.status = "active"
 
-    update_habit_tree_from_habit(
+    sync_habit_garden_layers(
         habit=habit,
+        user=current_user,
         db=db,
     )
 
@@ -468,8 +491,9 @@ def archive_habit(
 
     habit.status = "archived"
 
-    update_habit_tree_from_habit(
+    sync_habit_garden_layers(
         habit=habit,
+        user=current_user,
         db=db,
     )
 
