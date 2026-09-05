@@ -11,6 +11,7 @@ from app.schemas.garden_v2 import (
     GardenPlotDetailResponse,
     GardenV2HabitTreeSyncResponse,
     GardenV2TaskSyncResponse,
+    GardenV2WaterAreaSyncResponse,
     GardenWorldResponse,
 )
 from app.services.garden_v2_service import (
@@ -22,6 +23,7 @@ from app.services.garden_v2_service import (
     get_current_plot_objects_with_idle_rocks,
     get_plot_objects,
     sync_completed_tasks_to_garden_v2,
+    sync_current_plot_water_area,
     sync_habit_trees_to_garden_v2,
 )
 
@@ -182,4 +184,26 @@ def sync_habit_trees_to_v2_garden(
         skipped_count=skipped_count,
         dormant_count=dormant_count,
         objects=changed_objects,
+    )
+
+
+@router.post("/sync-water-area", response_model=GardenV2WaterAreaSyncResponse)
+def sync_water_area_to_v2_garden(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    water_object, completed_water_tasks_count, changed = sync_current_plot_water_area(
+        user=current_user,
+        db=db,
+    )
+
+    db.commit()
+
+    if water_object is not None:
+        db.refresh(water_object)
+
+    return GardenV2WaterAreaSyncResponse(
+        changed=changed,
+        completed_water_tasks_in_plot=completed_water_tasks_count,
+        object=water_object,
     )

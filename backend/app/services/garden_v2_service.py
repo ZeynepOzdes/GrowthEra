@@ -1,3 +1,4 @@
+import json
 from datetime import date, datetime, timedelta
 from math import ceil
 
@@ -56,6 +57,19 @@ def get_plot_day_range(plot_index: int) -> tuple[int, int]:
     end_journey_day = plot_index * PLOT_SIZE_DAYS
 
     return start_journey_day, end_journey_day
+
+
+def get_plot_date_range(user: User, garden_plot: GardenPlot) -> tuple[date, date]:
+    start_date = get_user_garden_start_date(user)
+
+    plot_start_date = start_date + timedelta(
+        days=garden_plot.start_journey_day - 1,
+    )
+    plot_end_date = start_date + timedelta(
+        days=garden_plot.end_journey_day - 1,
+    )
+
+    return plot_start_date, plot_end_date
 
 
 def build_plot_title(plot_index: int) -> str:
@@ -857,3 +871,177 @@ def sync_habit_trees_to_garden_v2(
             changed_objects.append(garden_object)
 
     return changed_objects, skipped_count, dormant_count
+
+
+def get_water_area_subtype(completed_water_tasks_count: int) -> str:
+    if completed_water_tasks_count >= 30:
+        return "large_lake"
+
+    if completed_water_tasks_count >= 15:
+        return "lake"
+
+    if completed_water_tasks_count >= 7:
+        return "pond"
+
+    if completed_water_tasks_count >= 3:
+        return "small_pond"
+
+    return "puddle"
+
+
+def count_completed_water_tasks_in_plot(
+    user: User,
+    garden_plot: GardenPlot,
+    db: Session,
+) -> int:
+    plot_start_date, plot_end_date = get_plot_date_range(
+        user=user,
+        garden_plot=garden_plot,
+    )
+
+    return (
+        db.query(Task)
+        .filter(
+            Task.user_id == user.id,
+            Task.element_type == "water",
+            Task.status == "completed",
+            Task.completed_at.isnot(None),
+            Task.completed_at >= datetime.combine(plot_start_date, datetime.min.time()),
+            Task.completed_at <= datetime.combine(plot_end_date, datetime.max.time()),
+        )
+        .count()
+    )
+
+
+def get_existing_water_area_object(
+    user_id: int,
+    garden_plot_id: int,
+    db: Session,
+) -> GardenObject | None:
+    return (
+        db.query(GardenObject)
+        .filter(
+            GardenObject.user_id == user_id,
+            GardenObject.garden_plot_id == garden_plot_id,
+            GardenObject.source_type == "water_area",
+            GardenObject.object_type == "lake",
+        )
+        .first()
+    )
+
+
+def create_or_update_water_area_for_plot(
+    user: User,
+    garden_plot: GardenPlot,
+    db: Session,
+) -> tuple[GardenObject | None, int, bool]:
+    completed_water_tasks_count = count_completed_water_tasks_in_plot(
+        user=user,
+        garden_plot=garden_plot,
+        db=db,
+    )
+
+    existing_object = get_existing_water_area_object(
+        user_id=user.id,
+        garden_plot_id=garden_plot.id,
+        db=db,
+    )
+
+    if completed_water_tasks_count <= 0 and existing_object is None:
+        return None, 0, False
+
+    object_subtype = get_water_area_subtype(completed_water_tasks_count)
+
+    description = (
+        f"Water area grown from {completed_water_tasks_count} "
+        "completed water task(s) in this garden plot."
+    )
+
+    metadata_json = json.dumps(
+        {
+            "completed_water_tasks_in_plot": completed_water_tasks_count,
+            "stage": object_subtype,
+        }
+    )
+
+    if existing_object is not None:
+        existing_object.object_subtype = object_subtype
+        existing_object.status = "active"
+        existing_object.title = "Water Area"
+        existing_object.description = description
+        existing_object.metadata_json = metadata_json
+        existing_object.updated_at = datetime.utcnow()
+
+        db.flush()
+
+        return existing_object, completed_water_tasks_count, True
+
+    position_row, position_column = get_next_empty_object_position(
+        garden_plot=garden_plot,
+        db=db,
+    )
+
+    water_object = GardenObject(
+        user_id=user.id,
+        garden_plot_id=garden_plot.id,
+        element_type="water",
+        object_type="lake",
+        object_subtype=object_subtype,
+        source_type="water_area",
+        source_id=None,
+        position_row=position_row,
+        position_column=position_column,
+        layer=1,
+        status="active",
+        is_persistent=True,
+        visible_date=date.today(),
+        title="Water Area",
+        description=description,
+        metadata_json=metadata_json,
+    )
+
+    db.add(water_object)
+    db.flush()
+
+    return water_object, completed_water_tasks_count, True
+
+
+def update_water_area_from_completed_task(
+    task: Task,
+    user: User,
+    db: Session,
+) -> GardenObject | None:
+    if task.status != "completed":
+        return None
+
+    if task.element_type != "water":
+        return None
+
+    garden_plot = get_current_garden_plot(
+        user=user,
+        db=db,
+    )
+
+    water_object, _, _ = create_or_update_water_area_for_plot(
+        user=user,
+        garden_plot=garden_plot,
+        db=db,
+    )
+
+    return water_object
+
+
+def sync_current_plot_water_area(
+    user: User,
+    db: Session,
+) -> tuple[GardenObject | None, int, bool]:
+    garden_plot = get_current_garden_plot(
+        user=user,
+        db=db,
+    )
+
+    return create_or_update_water_area_for_plot(
+        user=user,
+        garden_plot=garden_plot,
+        db=db,
+    )

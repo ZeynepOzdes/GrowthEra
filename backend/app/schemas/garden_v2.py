@@ -127,3 +127,9 @@ class GardenV2HabitTreeSyncResponse(BaseModel):
     skipped_count: int
     dormant_count: int
     objects: list[GardenObjectResponse]
+
+
+class GardenV2WaterAreaSyncResponse(BaseModel):
+    changed: bool
+    completed_water_tasks_in_plot: int
+    object: GardenObjectResponse | None
