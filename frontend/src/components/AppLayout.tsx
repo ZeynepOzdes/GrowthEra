@@ -34,6 +34,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <NavLink to="/habits">Habits</NavLink>
             <NavLink to="/tasks">Tasks</NavLink>
             <NavLink to="/garden">Garden</NavLink>
+            <NavLink to="/garden-v2">Garden V2</NavLink>
             <NavLink to="/daily-checkin">Daily Check-in</NavLink>
             <NavLink to="/ai-insights">AI Insights</NavLink>
           </nav>

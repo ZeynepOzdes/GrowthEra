@@ -1,0 +1,346 @@
+.garden-v2-page {
+  min-height: 100%;
+  padding: 32px;
+  color: #1f3327;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(167, 220, 180, 0.32),
+      transparent 34%
+    ),
+    linear-gradient(145deg, #f7faf5, #eef7ec);
+}
+
+.garden-v2-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 28px;
+  border: 1px solid rgba(70, 115, 79, 0.16);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 50px rgba(44, 83, 53, 0.08);
+}
+
+.garden-v2-eyebrow,
+.garden-v2-card-label,
+.garden-v2-panel-heading span {
+  display: block;
+  margin-bottom: 6px;
+  color: #618369;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.garden-v2-hero h1,
+.garden-v2-panel-heading h2,
+.garden-v2-info-card h3 {
+  margin: 0;
+  color: #203b28;
+}
+
+.garden-v2-hero h1 {
+  margin-bottom: 8px;
+  font-size: clamp(28px, 4vw, 46px);
+}
+
+.garden-v2-hero p,
+.garden-v2-info-card p {
+  margin: 0;
+  color: #64756a;
+  line-height: 1.6;
+}
+
+.garden-v2-day-card {
+  min-width: 170px;
+  padding: 20px;
+  border-radius: 20px;
+  color: #f8fff8;
+  text-align: center;
+  background: linear-gradient(145deg, #315c3b, #5c8a63);
+}
+
+.garden-v2-day-card span,
+.garden-v2-day-card small {
+  display: block;
+  opacity: 0.82;
+}
+
+.garden-v2-day-card strong {
+  display: block;
+  margin: 6px 0;
+  font-size: 38px;
+}
+
+.garden-v2-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.garden-v2-summary-grid article {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  padding: 18px;
+  border: 1px solid rgba(70, 115, 79, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.garden-v2-summary-grid article > span {
+  grid-row: 1 / 3;
+  align-self: center;
+  font-size: 28px;
+}
+
+.garden-v2-summary-grid strong {
+  font-size: 20px;
+}
+
+.garden-v2-summary-grid small {
+  color: #718078;
+}
+
+.garden-v2-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+}
+
+.garden-v2-panel,
+.garden-v2-info-card {
+  border: 1px solid rgba(70, 115, 79, 0.14);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 45px rgba(44, 83, 53, 0.07);
+}
+
+.garden-v2-panel {
+  padding: 24px;
+}
+
+.garden-v2-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.garden-v2-panel-heading h2 {
+  font-size: 20px;
+}
+
+.garden-v2-status {
+  margin: 0;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #356342;
+  background: #e4f3e6;
+}
+
+.garden-v2-board {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 14px;
+  overflow: auto;
+  border: 8px solid #806443;
+  border-radius: 18px;
+  background:
+    linear-gradient(
+      rgba(255, 255, 255, 0.07),
+      rgba(255, 255, 255, 0.07)
+    ),
+    #789d64;
+  box-shadow: inset 0 0 30px rgba(38, 72, 43, 0.22);
+}
+
+.garden-v2-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(44, 79, 48, 0.12);
+  border-radius: 8px;
+  background: rgba(221, 239, 207, 0.4);
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.garden-v2-cell:hover {
+  z-index: 2;
+  transform: scale(1.14);
+  background: rgba(239, 250, 228, 0.85);
+}
+
+.garden-v2-symbol {
+  font-size: clamp(17px, 2vw, 27px);
+  filter: drop-shadow(0 3px 2px rgba(38, 65, 41, 0.18));
+}
+
+.garden-v2-object--flower {
+  background: rgba(255, 207, 222, 0.65);
+}
+
+.garden-v2-object--tree {
+  background: rgba(176, 221, 163, 0.7);
+}
+
+.garden-v2-object--path {
+  background: rgba(218, 210, 190, 0.76);
+}
+
+.garden-v2-object--idle-rock {
+  border: 2px dashed rgba(77, 84, 75, 0.45);
+  color: rgba(57, 63, 56, 0.65);
+  background: rgba(215, 218, 210, 0.48);
+}
+
+.garden-v2-object--water {
+  background: rgba(168, 221, 238, 0.76);
+}
+
+.garden-v2-object--air {
+  background: rgba(239, 224, 255, 0.72);
+}
+
+.garden-v2-object--fire {
+  background: rgba(255, 190, 147, 0.76);
+}
+
+.garden-v2-side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.garden-v2-info-card {
+  padding: 22px;
+}
+
+.garden-v2-info-card h3 {
+  margin-bottom: 8px;
+}
+
+.garden-v2-info-card > small {
+  display: block;
+  margin-top: 12px;
+  color: #7b887e;
+}
+
+.garden-v2-reward-icon {
+  margin-bottom: 10px;
+  font-size: 38px;
+}
+
+.garden-v2-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.garden-v2-legend li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.garden-v2-legend li > span {
+  width: 34px;
+  font-size: 24px;
+  text-align: center;
+}
+
+.garden-v2-legend strong,
+.garden-v2-legend small {
+  display: block;
+}
+
+.garden-v2-legend small {
+  margin-top: 2px;
+  color: #76847a;
+}
+
+.garden-v2-state-card {
+  display: flex;
+  min-height: 320px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 32px;
+  border-radius: 24px;
+  text-align: center;
+  background: white;
+}
+
+.garden-v2-error {
+  color: #8b3030;
+}
+
+.garden-v2-loader {
+  width: 34px;
+  height: 34px;
+  border: 4px solid #dce9dc;
+  border-top-color: #4f7f58;
+  border-radius: 50%;
+  animation: garden-v2-spin 0.8s linear infinite;
+}
+
+@keyframes garden-v2-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1050px) {
+  .garden-v2-summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .garden-v2-content {
+    grid-template-columns: 1fr;
+  }
+
+  .garden-v2-side-panel {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .garden-v2-page {
+    padding: 18px;
+  }
+
+  .garden-v2-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .garden-v2-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .garden-v2-side-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .garden-v2-board {
+    min-width: 520px;
+  }
+
+  .garden-v2-panel {
+    overflow-x: auto;
+  }
+}

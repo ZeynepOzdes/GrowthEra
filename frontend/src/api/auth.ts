@@ -1,10 +1,10 @@
-import { apiRequest, TOKEN_STORAGE_KEY } from "./client";
 import type {
   LoginRequest,
   RegisterRequest,
   TokenResponse,
   UserResponse,
 } from "../types/auth";
+import { apiRequest, TOKEN_STORAGE_KEY } from "./client";
 
 export function saveToken(token: string): void {
   localStorage.setItem(TOKEN_STORAGE_KEY, token);
@@ -24,15 +24,17 @@ export async function registerUser(
   return apiRequest<UserResponse>("/auth/register", {
     method: "POST",
     body: JSON.stringify(data),
-    auth: false,
+    skipAuth: true,
   });
 }
 
-export async function loginUser(data: LoginRequest): Promise<TokenResponse> {
+export async function loginUser(
+  data: LoginRequest
+): Promise<TokenResponse> {
   return apiRequest<TokenResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(data),
-    auth: false,
+    skipAuth: true,
   });
 }
 

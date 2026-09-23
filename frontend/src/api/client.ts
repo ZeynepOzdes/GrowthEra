@@ -2,7 +2,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const TOKEN_STORAGE_KEY = "growthera_access_token";
 
 type ApiRequestOptions = RequestInit & {
-  skipAuth?: boolean;
+  skipAuth?: true;
 };
 
 function buildValidationMessage(detail: unknown): string {

@@ -5,6 +5,7 @@ import { AIInsightsPage } from "./pages/AIInsightsPage";
 import { DailyCheckInPage } from "./pages/DailyCheckInPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { GardenPage } from "./pages/GardenPage";
+import { GardenV2Page } from "./pages/GardenV2Page";
 import { GoalsPage } from "./pages/GoalsPage";
 import { HabitsPage } from "./pages/HabitsPage";
 import { LifeAreasPage } from "./pages/LifeAreasPage";
@@ -78,6 +79,15 @@ export default function App() {
         element={
           <ProtectedPage>
             <GardenPage />
+          </ProtectedPage>
+        }
+      />
+
+      <Route
+        path="/garden-v2"
+        element={
+          <ProtectedPage>
+            <GardenV2Page />
           </ProtectedPage>
         }
       />
