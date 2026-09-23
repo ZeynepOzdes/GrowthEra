@@ -133,3 +133,21 @@ class GardenV2WaterAreaSyncResponse(BaseModel):
     changed: bool
     completed_water_tasks_in_plot: int
     object: GardenObjectResponse | None
+
+class GardenV2AirRewardResponse(BaseModel):
+    user_air_reward_id: int
+    task_id: int
+    journey_day: int
+    reward_date: date
+
+    reward_code: str
+    reward_name: str
+    reward_description: str | None
+
+    garden_object: GardenObjectResponse | None
+
+
+class GardenV2AirRewardSyncResponse(BaseModel):
+    awarded: bool
+    message: str
+    reward: GardenV2AirRewardResponse | None

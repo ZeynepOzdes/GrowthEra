@@ -223,3 +223,163 @@ class HabitTreeCycle(Base):
         onupdate=datetime.utcnow,
         nullable=False,
     )
+
+class GardenRewardObject(Base):
+    __tablename__ = "garden_reward_objects"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "code",
+            name="uq_garden_reward_object_code",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+
+    code: Mapped[str] = mapped_column(
+        String(80),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+
+    element_type: Mapped[str] = mapped_column(
+        String(30),
+        default="air",
+        nullable=False,
+    )
+
+    object_type: Mapped[str] = mapped_column(
+        String(50),
+        default="decoration",
+        nullable=False,
+    )
+
+    object_subtype: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    description: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
+
+
+class DailyAirRewardSchedule(Base):
+    __tablename__ = "daily_air_reward_schedule"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "journey_day",
+            name="uq_daily_air_reward_schedule_journey_day",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+
+    journey_day: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    reward_object_id: Mapped[int] = mapped_column(
+        ForeignKey("garden_reward_objects.id"),
+        nullable=False,
+        index=True,
+    )
+
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
+
+
+class UserAirReward(Base):
+    __tablename__ = "user_air_rewards"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "reward_date",
+            name="uq_user_air_reward_user_date",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+
+    task_id: Mapped[int] = mapped_column(
+        ForeignKey("tasks.id"),
+        nullable=False,
+        index=True,
+    )
+
+    reward_object_id: Mapped[int] = mapped_column(
+        ForeignKey("garden_reward_objects.id"),
+        nullable=False,
+        index=True,
+    )
+
+    garden_object_id: Mapped[int | None] = mapped_column(
+        ForeignKey("garden_objects.id"),
+        nullable=True,
+        index=True,
+    )
+
+    journey_day: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        index=True,
+    )
+
+    reward_date: Mapped[date] = mapped_column(
+        Date,
+        nullable=False,
+        index=True,
+    )
+
+    awarded_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )

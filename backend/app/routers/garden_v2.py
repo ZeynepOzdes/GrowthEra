@@ -9,6 +9,8 @@ from app.schemas.garden_v2 import (
     GardenCurrentPlotResponse,
     GardenJourneyContextResponse,
     GardenPlotDetailResponse,
+    GardenV2AirRewardResponse,
+    GardenV2AirRewardSyncResponse,
     GardenV2HabitTreeSyncResponse,
     GardenV2TaskSyncResponse,
     GardenV2WaterAreaSyncResponse,
@@ -16,15 +18,18 @@ from app.schemas.garden_v2 import (
 )
 from app.services.garden_v2_service import (
     PLOT_SIZE_DAYS,
+    build_air_reward_response,
     calculate_journey_day,
     calculate_plot_day,
     calculate_plot_index,
     ensure_plots_up_to_current,
     get_current_plot_objects_with_idle_rocks,
     get_plot_objects,
+    get_user_air_reward_responses,
     sync_completed_tasks_to_garden_v2,
     sync_current_plot_water_area,
     sync_habit_trees_to_garden_v2,
+    sync_today_air_reward,
 )
 
 
@@ -206,4 +211,60 @@ def sync_water_area_to_v2_garden(
         changed=changed,
         completed_water_tasks_in_plot=completed_water_tasks_count,
         object=water_object,
+    )
+
+@router.post(
+    "/sync-air-reward",
+    response_model=GardenV2AirRewardSyncResponse,
+)
+def sync_air_reward_to_v2_garden(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    user_air_reward, garden_object, awarded = sync_today_air_reward(
+        user=current_user,
+        db=db,
+    )
+
+    db.commit()
+
+    if user_air_reward is None:
+        return GardenV2AirRewardSyncResponse(
+            awarded=False,
+            message="No completed Air task was found for today.",
+            reward=None,
+        )
+
+    db.refresh(user_air_reward)
+
+    if garden_object is not None:
+        db.refresh(garden_object)
+
+    reward_response = build_air_reward_response(
+        user_air_reward=user_air_reward,
+        db=db,
+    )
+
+    return GardenV2AirRewardSyncResponse(
+        awarded=awarded,
+        message=(
+            "Daily Air reward awarded successfully."
+            if awarded
+            else "The daily Air reward has already been awarded."
+        ),
+        reward=reward_response,
+    )
+
+
+@router.get(
+    "/air-rewards",
+    response_model=list[GardenV2AirRewardResponse],
+)
+def get_earned_air_rewards(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    return get_user_air_reward_responses(
+        user=current_user,
+        db=db,
     )

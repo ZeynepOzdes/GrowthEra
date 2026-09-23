@@ -7,6 +7,7 @@ from app.db.database import get_db
 from app.dependencies.auth import get_current_active_user
 from app.services.garden_service import create_garden_cell_from_task
 from app.services.garden_v2_service import (
+    award_daily_air_reward_from_task,
     create_garden_v2_object_from_task,
     update_water_area_from_completed_task,
 )
@@ -416,6 +417,7 @@ def complete_task(
     create_garden_cell_from_task(task=task, db=db)
     create_garden_v2_object_from_task(task=task, user=current_user, db=db)
     update_water_area_from_completed_task(task=task, user=current_user, db=db)
+    award_daily_air_reward_from_task(task=task, user=current_user, db=db)
 
     db.commit()
     db.refresh(task)

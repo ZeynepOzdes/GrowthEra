@@ -6,15 +6,21 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.garden_v2 import (
+    DailyAirRewardSchedule,
     GardenObject,
     GardenPlot,
+    GardenRewardObject,
     HabitTreeCycle,
     HabitTreeState,
+    UserAirReward,
 )
 from app.models.habit import Habit, HabitLog
 from app.models.task import Task
 from app.models.user import User
-from app.schemas.garden_v2 import GardenObjectResponse
+from app.schemas.garden_v2 import (
+    GardenObjectResponse,
+    GardenV2AirRewardResponse,
+)
 
 
 PLOT_SIZE_DAYS = 30
@@ -1045,3 +1051,333 @@ def sync_current_plot_water_area(
         garden_plot=garden_plot,
         db=db,
     )
+
+def get_or_create_fallback_air_reward_object(
+    db: Session,
+) -> GardenRewardObject:
+    fallback_reward = (
+        db.query(GardenRewardObject)
+        .filter(GardenRewardObject.code == "inspiration_spark")
+        .first()
+    )
+
+    if fallback_reward is not None:
+        return fallback_reward
+
+    fallback_reward = GardenRewardObject(
+        code="inspiration_spark",
+        name="Inspiration Spark",
+        element_type="air",
+        object_type="decoration",
+        object_subtype="spark",
+        description=(
+            "A small spark awarded when no daily reward is scheduled."
+        ),
+        is_active=True,
+    )
+
+    db.add(fallback_reward)
+    db.flush()
+
+    return fallback_reward
+
+
+def get_air_reward_object_for_journey_day(
+    journey_day: int,
+    db: Session,
+) -> GardenRewardObject:
+    schedule = (
+        db.query(DailyAirRewardSchedule)
+        .filter(
+            DailyAirRewardSchedule.journey_day == journey_day,
+            DailyAirRewardSchedule.is_active == True,
+        )
+        .first()
+    )
+
+    if schedule is not None:
+        scheduled_reward = (
+            db.query(GardenRewardObject)
+            .filter(
+                GardenRewardObject.id == schedule.reward_object_id,
+                GardenRewardObject.is_active == True,
+            )
+            .first()
+        )
+
+        if scheduled_reward is not None:
+            return scheduled_reward
+
+    return get_or_create_fallback_air_reward_object(db=db)
+
+
+def get_user_air_reward_for_date(
+    user_id: int,
+    reward_date: date,
+    db: Session,
+) -> UserAirReward | None:
+    return (
+        db.query(UserAirReward)
+        .filter(
+            UserAirReward.user_id == user_id,
+            UserAirReward.reward_date == reward_date,
+        )
+        .first()
+    )
+
+
+def get_air_reward_garden_object(
+    user_air_reward: UserAirReward,
+    db: Session,
+) -> GardenObject | None:
+    if user_air_reward.garden_object_id is None:
+        return None
+
+    return (
+        db.query(GardenObject)
+        .filter(
+            GardenObject.id == user_air_reward.garden_object_id,
+            GardenObject.user_id == user_air_reward.user_id,
+        )
+        .first()
+    )
+
+
+def build_air_reward_response(
+    user_air_reward: UserAirReward,
+    db: Session,
+) -> GardenV2AirRewardResponse:
+    reward_object = (
+        db.query(GardenRewardObject)
+        .filter(
+            GardenRewardObject.id == user_air_reward.reward_object_id,
+        )
+        .first()
+    )
+
+    garden_object = get_air_reward_garden_object(
+        user_air_reward=user_air_reward,
+        db=db,
+    )
+
+    return GardenV2AirRewardResponse(
+        user_air_reward_id=user_air_reward.id,
+        task_id=user_air_reward.task_id,
+        journey_day=user_air_reward.journey_day,
+        reward_date=user_air_reward.reward_date,
+        awarded_at=user_air_reward.awarded_at,
+        reward_code=(
+            reward_object.code
+            if reward_object is not None
+            else "unknown_reward"
+        ),
+        reward_name=(
+            reward_object.name
+            if reward_object is not None
+            else "Unknown Reward"
+        ),
+        reward_description=(
+            reward_object.description
+            if reward_object is not None
+            else None
+        ),
+        object_subtype=(
+            reward_object.object_subtype
+            if reward_object is not None
+            else "unknown"
+        ),
+        garden_object=(
+            GardenObjectResponse.model_validate(garden_object)
+            if garden_object is not None
+            else None
+        ),
+    )
+
+
+def award_daily_air_reward_from_task(
+    task: Task,
+    user: User,
+    db: Session,
+) -> tuple[UserAirReward | None, GardenObject | None, bool]:
+    if task.user_id != user.id:
+        return None, None, False
+
+    if task.status != "completed":
+        return None, None, False
+
+    if task.element_type != "air":
+        return None, None, False
+
+    today = date.today()
+
+    existing_reward = get_user_air_reward_for_date(
+        user_id=user.id,
+        reward_date=today,
+        db=db,
+    )
+
+    if existing_reward is not None:
+        existing_garden_object = get_air_reward_garden_object(
+            user_air_reward=existing_reward,
+            db=db,
+        )
+
+        return existing_reward, existing_garden_object, False
+
+    journey_day = calculate_journey_day(
+        user=user,
+        today=today,
+    )
+
+    reward_object = get_air_reward_object_for_journey_day(
+        journey_day=journey_day,
+        db=db,
+    )
+
+    garden_plot = get_current_garden_plot(
+        user=user,
+        db=db,
+    )
+
+    position_row, position_column = get_next_empty_object_position(
+        garden_plot=garden_plot,
+        db=db,
+    )
+
+    user_air_reward = UserAirReward(
+        user_id=user.id,
+        task_id=task.id,
+        reward_object_id=reward_object.id,
+        garden_object_id=None,
+        journey_day=journey_day,
+        reward_date=today,
+    )
+
+    db.add(user_air_reward)
+    db.flush()
+
+    garden_object = GardenObject(
+        user_id=user.id,
+        garden_plot_id=garden_plot.id,
+        element_type="air",
+        object_type="decoration",
+        object_subtype=reward_object.object_subtype,
+        source_type="air_reward",
+        source_id=user_air_reward.id,
+        position_row=position_row,
+        position_column=position_column,
+        layer=2,
+        status="active",
+        is_persistent=True,
+        visible_date=today,
+        title=reward_object.name,
+        description=reward_object.description,
+        metadata_json=json.dumps(
+            {
+                "reward_code": reward_object.code,
+                "journey_day": journey_day,
+                "source_task_id": task.id,
+            }
+        ),
+    )
+
+    db.add(garden_object)
+    db.flush()
+
+    user_air_reward.garden_object_id = garden_object.id
+    db.flush()
+
+    return user_air_reward, garden_object, True
+
+
+def get_today_completed_air_task(
+    user: User,
+    db: Session,
+) -> Task | None:
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+
+    today_start = datetime.combine(
+        today,
+        datetime.min.time(),
+    )
+
+    tomorrow_start = datetime.combine(
+        tomorrow,
+        datetime.min.time(),
+    )
+
+    return (
+        db.query(Task)
+        .filter(
+            Task.user_id == user.id,
+            Task.element_type == "air",
+            Task.status == "completed",
+            Task.completed_at.isnot(None),
+            Task.completed_at >= today_start,
+            Task.completed_at < tomorrow_start,
+        )
+        .order_by(
+            Task.completed_at.asc(),
+            Task.id.asc(),
+        )
+        .first()
+    )
+
+
+def sync_today_air_reward(
+    user: User,
+    db: Session,
+) -> tuple[UserAirReward | None, GardenObject | None, bool]:
+    today = date.today()
+
+    existing_reward = get_user_air_reward_for_date(
+        user_id=user.id,
+        reward_date=today,
+        db=db,
+    )
+
+    if existing_reward is not None:
+        garden_object = get_air_reward_garden_object(
+            user_air_reward=existing_reward,
+            db=db,
+        )
+
+        return existing_reward, garden_object, False
+
+    completed_air_task = get_today_completed_air_task(
+        user=user,
+        db=db,
+    )
+
+    if completed_air_task is None:
+        return None, None, False
+
+    return award_daily_air_reward_from_task(
+        task=completed_air_task,
+        user=user,
+        db=db,
+    )
+
+
+def get_user_air_reward_responses(
+    user: User,
+    db: Session,
+) -> list[GardenV2AirRewardResponse]:
+    user_rewards = (
+        db.query(UserAirReward)
+        .filter(UserAirReward.user_id == user.id)
+        .order_by(
+            UserAirReward.reward_date.desc(),
+            UserAirReward.awarded_at.desc(),
+        )
+        .all()
+    )
+
+    return [
+        build_air_reward_response(
+            user_air_reward=user_reward,
+            db=db,
+        )
+        for user_reward in user_rewards
+    ]

@@ -3,7 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.db.database import Base, SessionLocal, engine
-from app.db.seed import seed_default_life_areas
+from app.db.seed import (
+    seed_default_air_rewards,
+    seed_default_life_areas,
+)
 from app.models import (
     ai_insight,
     daily_checkin,
@@ -59,6 +62,7 @@ def on_startup():
 
     try:
         seed_default_life_areas(db)
+        seed_default_air_rewards(db)
     finally:
         db.close()
 
